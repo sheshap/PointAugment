@@ -49,12 +49,12 @@ def mat_loss(trans):
 
 
 
-def cls_loss(pred, pred_aug, gold, pc_tran, aug_tran, pc_feat, aug_feat, ispn = True):
+def cls_loss(pred, pred_aug, gold, pc_feat, aug_feat, ispn = True):
     ''' Calculate cross entropy loss, apply label smoothing if needed. '''
     mse_fn = torch.nn.MSELoss(reduce=True, size_average=True)
 
-    cls_pc, _ = cal_loss_raw(pred, gold)
-    cls_aug, _ = cal_loss_raw(pred_aug, gold)
+    cls_pc, cls_pc_raw = cal_loss_raw(pred, gold)
+    cls_aug, cls_aug_raw = cal_loss_raw(pred_aug, gold)
     if ispn:
         cls_pc = cls_pc + 0.001*mat_loss(pc_tran)
         cls_aug = cls_aug + 0.001*mat_loss(aug_tran)
@@ -62,11 +62,11 @@ def cls_loss(pred, pred_aug, gold, pc_tran, aug_tran, pc_feat, aug_feat, ispn = 
     feat_diff = 10.0*mse_fn(pc_feat,aug_feat)
     parameters = torch.max(torch.tensor(NUM).cuda(), torch.exp(1.0-cls_pc_raw)**2).cuda()
     cls_diff = (torch.abs(cls_pc_raw - cls_aug_raw) * (parameters*2)).mean()
-    cls_loss = cls_pc + cls_aug  + feat_diff# + cls_diff
+    cls_loss = cls_pc + cls_aug  + feat_diff + cls_diff
 
     return cls_loss
 
-def aug_loss(pred, pred_aug, gold, pc_tran, aug_tran, ispn = True):
+def aug_loss(pred, pred_aug, gold, ispn = True):
     ''' Calculate cross entropy loss, apply label smoothing if needed. '''
     mse_fn = torch.nn.MSELoss(reduce=True, size_average=True)
 
