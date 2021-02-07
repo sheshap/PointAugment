@@ -15,7 +15,8 @@ import torch.utils.data
 from torch.utils.data import DataLoader
 import logging
 from tqdm import tqdm
-from Augment.pointnet import PointNetCls
+# from Augment.pointnet import PointNetCls
+from Augment.pointnetpp import PointNet2Cls
 from Augment.augmentor import Augmentor
 import numpy as np
 from tensorboardX import SummaryWriter
@@ -82,7 +83,7 @@ class Model:
         device = torch.device("cuda" if use_cuda else "cpu")
         self.dim = 3 if self.opts.use_normal else 0
 
-        classifier = PointNetCls(num_class).cuda()
+        classifier = PointNet2Cls(num_class).cuda()
         augmentor = Augmentor().cuda()
         if torch.cuda.device_count() > 1:
             print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -126,7 +127,7 @@ class Model:
         global_epoch = 0
         best_tst_accuracy = 0.0
         blue = lambda x: '\033[94m' + x + '\033[0m'
-        ispn = True if self.opts.model_name=="pointnet" else False
+        ispn = False #True if self.opts.model_name=="pointnet" else False
         '''TRANING'''
         self.logger.info('Start training...')
         PointcloudScaleAndTranslate = d_utils.PointcloudScaleAndTranslate()  # initialize augmentation
@@ -144,25 +145,37 @@ class Model:
                 points, target = points.cuda(), target.cuda().long()
 
                 points = PointcloudScaleAndTranslate(points)
+                # print("points "+str(points.shape))
                 points = points.transpose(2, 1).contiguous()
-
+                # print("points transpose "+str(points.shape))
                 noise = 0.02 * torch.randn(self.opts.batch_size, 1024).cuda()
+                # print("noise "+str(noise.shape))
 
                 classifier = classifier.train()
                 augmentor = augmentor.train()
                 optimizer_a.zero_grad()
                 aug_pc = augmentor(points, noise)
+                # print("aug_pc "+str(aug_pc.shape))
 
-                pred_pc, pc_tran, pc_feat = classifier(points)
-                pred_aug, aug_tran, aug_feat = classifier(aug_pc)
-                augLoss  = loss_utils.aug_loss(pred_pc, pred_aug, target, pc_tran, aug_tran, ispn=ispn)
+                # pred_pc, pc_tran, pc_feat = classifier(points)
+                pred_pc, pc_feat = classifier(points)
+                # print("pred_pc "+str(pred_pc.shape))
+                # print("pc_tran "+str(pc_tran.shape))
+                # print("pc_feat "+str(pc_feat.shape))
+                
+                # pred_aug, aug_tran, aug_feat = classifier(aug_pc)
+                pred_aug, aug_feat = classifier(aug_pc)
+                # print("pred_aug "+str(pred_aug.shape))
+                # print("aug_tran "+str(aug_tran.shape))
+                # print("aug_feat "+str(aug_feat.shape))
+                augLoss  = loss_utils.aug_loss(pred_pc, pred_aug, target, ispn=ispn)
+                # exit()
 
                 augLoss.backward(retain_graph=True)
                 optimizer_a.step()
 
-
                 optimizer_c.zero_grad()
-                clsLoss = loss_utils.cls_loss(pred_pc, pred_aug, target, pc_tran, aug_tran, pc_feat,
+                clsLoss = loss_utils.cls_loss(pred_pc, pred_aug, target, pc_feat,
                                               aug_feat, ispn=ispn)
                 clsLoss.backward(retain_graph=True)
                 optimizer_c.step()
@@ -181,7 +194,7 @@ class Model:
             writer.add_scalar("Test_Acc", test_acc, epoch)
 
 
-            if (test_acc >= best_tst_accuracy):# or (epoch % self.opts.epoch_per_save == 0):
+            if (test_acc >= best_tst_accuracy) and test_acc >= 0.89:# or (epoch % self.opts.epoch_per_save == 0):
                 best_tst_accuracy = test_acc
                 self.log_string('Save model...')
                 self.save_checkpoint(
@@ -210,7 +223,7 @@ class Model:
             points = points.transpose(2, 1)
             points, target = points.cuda(), target.cuda()
             classifier = model.eval()
-            pred, _, _= classifier(points)
+            pred, _= classifier(points)
             pred_choice = pred.data.max(1)[1]
 
             test_true.append(target.cpu().numpy())
