@@ -17,7 +17,7 @@ def str2bool(x):
 
 parser = argparse.ArgumentParser('PointNet')
 parser.add_argument('--batch_size', type=int, default=24, help='batch size in training')
-parser.add_argument('--epoch',  default=250, type=int, help='number of epoch in training')
+parser.add_argument('--epoch',  default=301, type=int, help='number of epoch in training')
 parser.add_argument('--learning_rate', default=0.001, type=float, help='learning rate in training')
 parser.add_argument('--learning_rate_a', default=0.001, type=float, help='learning rate in training')
 parser.add_argument('--no_decay', type=str2bool, default=False)
@@ -28,9 +28,9 @@ parser.add_argument('--pretrain', type=str, default=None,help='whether use pretr
 parser.add_argument('--decay_rate', type=float, default=1e-4, help='decay rate of learning rate')
 parser.add_argument('--lr_decay', type=float, default=0.5, help='decay rate of learning rate')
 
-parser.add_argument('--model_name', default='pointnet', help='classification model')
+parser.add_argument('--model_name', default='pointnetpp', help='classification model')
 parser.add_argument('--log_dir', default='log', help='log_dir')
-parser.add_argument('--data_dir', default='ModelNet40_Folder')
+parser.add_argument('--data_dir', default='modelnet40_ply_hdf5_2048')
 parser.add_argument('--epoch_per_save', type=int, default=5)
 parser.add_argument('--num_points', type=int, default=1024)
 parser.add_argument('--y_rotated', type=str2bool, default=True)
