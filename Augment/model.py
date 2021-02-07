@@ -181,7 +181,7 @@ class Model:
             writer.add_scalar("Test_Acc", test_acc, epoch)
 
 
-            if (test_acc >= best_tst_accuracy) and test_acc >= 0.895:# or (epoch % self.opts.epoch_per_save == 0):
+            if (test_acc >= best_tst_accuracy):# or (epoch % self.opts.epoch_per_save == 0):
                 best_tst_accuracy = test_acc
                 self.log_string('Save model...')
                 self.save_checkpoint(
